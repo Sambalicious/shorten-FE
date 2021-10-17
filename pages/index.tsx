@@ -11,6 +11,7 @@ import {
   Center,
   Heading,
   Link,
+  Box,
 } from "@chakra-ui/layout";
 
 import type { NextPage } from "next";
@@ -19,12 +20,9 @@ import axios, { AxiosResponse } from "axios";
 import { useToast } from "@chakra-ui/toast";
 
 interface ShortUrl {
-  longUrl: string;
-  shortUrl: string;
-  shortCode: string;
-  id: string;
-  createdAt: string;
-  updatedAt: string;
+  status: string;
+  result: { shortUrl: string };
+  error: { message: string };
 }
 const Home: NextPage = () => {
   const toast = useToast();
@@ -56,23 +54,26 @@ const Home: NextPage = () => {
     }
     setLoading(true);
     try {
-      let response: AxiosResponse<ShortUrl> = await axios.post<ShortUrl>(
+      let response = await axios.post<ShortUrl>(
         "https://aqueous-wave-62564.herokuapp.com/api/shorten",
         { longUrl }
       );
-
-      if (response && response.data) {
-        let { shortUrl } = response.data;
+      if (response && response.data.status === "SUCCESS") {
+        let { shortUrl } = response.data.result;
         setValue(shortUrl);
+      } else {
+        throw new Error(response.data.error.message);
       }
     } catch (error) {
-      toast({
-        title: "Check and try again.",
-        description: "Something went wrong",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      console.log(error);
+      // toast({
+      //   title: "Check and try again.",
+      //   description: "Something went wrong",
+      //   status: "error",
+      //   duration: 3000,
+      //   isClosable: true,
+      // });
+      //console.log(error.message);
     }
 
     setLoading(false);
@@ -93,11 +94,14 @@ const Home: NextPage = () => {
 
             <VStack w="full">
               <FormControl isRequired>
-                <FormLabel>Enter the long url you want to shorten</FormLabel>
+                <FormLabel id="1" htmlFor="label">
+                  Enter the long url you want to shorten
+                </FormLabel>
                 <Input
                   value={longUrl}
                   onChange={handleChange}
                   variant="flushed"
+                  id="longurl"
                   placeholder="e.g https://github.com/Sambalicious/shorten-url"
                 />
                 <Button
@@ -114,7 +118,7 @@ const Home: NextPage = () => {
               </FormControl>
             </VStack>
 
-            {value && (
+            {value && longUrl && (
               <VStack w="full">
                 <Heading size="xl">Ready!</Heading>
                 <VStack w="full">
@@ -126,6 +130,7 @@ const Home: NextPage = () => {
                       value={value}
                       variant="filled"
                       placeholder="yes.com/1"
+                      id="shortened-url"
                     />
                     <Button colorScheme={btnColor} onClick={onCopy} ml={2}>
                       {hasCopied ? "Copied" : "Copy"}
