@@ -23,7 +23,7 @@ const Home: NextPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [data, setData] = useState<IData>();
   const [longUrl, setLongUrl] = useState<string>("");
-  const { hasCopied, onCopy } = useClipboard("sda");
+  const { hasCopied, onCopy } = useClipboard(data?.shortUrl || "");
   const { colorMode, toggleColorMode } = useColorMode();
   const bgColor = useColorModeValue("gray.50", "whiteAlpha.50");
 
