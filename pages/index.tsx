@@ -12,72 +12,59 @@ import {
   Heading,
   Link,
 } from "@chakra-ui/layout";
-
 import type { NextPage } from "next";
 import { useColorMode, useColorModeValue } from "@chakra-ui/color-mode";
-import axios, { AxiosResponse } from "axios";
 import { useToast } from "@chakra-ui/toast";
+import { POST } from "../components/utils/helper";
+import { IData } from "../components/types";
 
-interface ShortUrl {
-  longUrl: string;
-  shortUrl: string;
-  shortCode: string;
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-}
 const Home: NextPage = () => {
   const toast = useToast();
   const [loading, setLoading] = useState<boolean>(false);
-  const [value, setValue] = useState<string>("");
-  const [longUrl, setLongUrl] = useState("");
-  const { hasCopied, onCopy } = useClipboard(value);
+  const [data, setData] = useState<IData>();
+  const [longUrl, setLongUrl] = useState<string>("");
+  const { hasCopied, onCopy } = useClipboard("sda");
   const { colorMode, toggleColorMode } = useColorMode();
   const bgColor = useColorModeValue("gray.50", "whiteAlpha.50");
 
   const btnColor = useColorModeValue("blue", "green");
 
   const handleChange = (e: React.FormEvent<EventTarget>) => {
+    setData({});
     let target = e.target as HTMLInputElement;
     setLongUrl(target.value);
   };
 
   const getShortLink = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!longUrl) {
       return toast({
-        title: "Invalid",
-        description: "Long Url cannot be blank",
+        title: "Please enter a Url",
         status: "error",
         duration: 3000,
         isClosable: true,
+        position: "bottom-left",
       });
     }
     setLoading(true);
-    try {
-      let response: AxiosResponse<ShortUrl> = await axios.post<ShortUrl>(
-        "https://aqueous-wave-62564.herokuapp.com/api/shorten",
-        { longUrl }
-      );
 
-      if (response && response.data) {
-        let { shortUrl } = response.data;
-        setValue(shortUrl);
-      }
-    } catch (error) {
+    let response = await POST(
+      "https://aqueous-wave-62564.herokuapp.com/api/shorten",
+      { longUrl }
+    );
+    if (response && !response.error) {
+      setData(response?.data);
+    } else {
       toast({
-        title: "Check and try again.",
-        description: "Something went wrong",
+        title: response?.error.message,
         status: "error",
         duration: 3000,
         isClosable: true,
+        position: "bottom-left",
       });
     }
-
     setLoading(false);
   };
-
   return (
     <Container p={0} maxW="container.xl" bgColor={bgColor}>
       <Flex h="100vh" justify="center" align="center">
@@ -93,11 +80,14 @@ const Home: NextPage = () => {
 
             <VStack w="full">
               <FormControl isRequired>
-                <FormLabel>Enter the long url you want to shorten</FormLabel>
+                <FormLabel id="longUrl" htmlFor="longUrl">
+                  Enter the long url you want to shorten
+                </FormLabel>
                 <Input
                   value={longUrl}
                   onChange={handleChange}
                   variant="flushed"
+                  id="longurl"
                   placeholder="e.g https://github.com/Sambalicious/shorten-url"
                 />
                 <Button
@@ -114,7 +104,7 @@ const Home: NextPage = () => {
               </FormControl>
             </VStack>
 
-            {value && (
+            {data?.shortUrl && longUrl && (
               <VStack w="full">
                 <Heading size="xl">Ready!</Heading>
                 <VStack w="full">
@@ -123,9 +113,10 @@ const Home: NextPage = () => {
                   <Flex w="full" my={5}>
                     <Input
                       isReadOnly
-                      value={value}
+                      value={data.shortUrl}
                       variant="filled"
                       placeholder="yes.com/1"
+                      id="shortened-url"
                     />
                     <Button colorScheme={btnColor} onClick={onCopy} ml={2}>
                       {hasCopied ? "Copied" : "Copy"}
